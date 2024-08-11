@@ -1,0 +1,34 @@
+{
+    "@context": [
+      "https://www.w3.org/2018/credentials/v1",
+      "http://example.org/credentials/v1"
+    ],
+    "id": "http://example.org/credentials/1872",
+    "type": ["UniversityDegreeCredential"],
+    "issuer": {
+      "id": "did:example:unifesp-1234567890abcdef",
+      "name": "Universidade Federal de São Paulo - Unifesp",
+      "contact": {
+        "email": "info@unifesp.br",
+        "phone": "+55-11-1234-5678",
+        "address": "Rua Sena Madureira, n.º 1.500 - Vila Clementino - São Paulo - SP - CEP: 04021-001 "
+      },
+      "verificationMethod": "https://unifesp.br/issuers/keys/1"
+    },
+    "issuanceDate": "2024-08-07T04:24:12Z",
+    "credentialSubject": {
+      "id": "did:example:abcdef1234567",
+      "degree": {
+        "type": "BachelorDegree",
+        "name": "Bachelor of Science in Computer Science"
+      }
+    },
+    "proof": {
+      "type": "RsaSignature2018",
+      "created": "2024-08-07T04:24:12Z",
+      "proofPurpose": "assertionMethod",
+      "verificationMethod": "https://unifesp.br/issuers/keys/1",
+      "jws": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImNsaW..."
+    }
+  }
+  
