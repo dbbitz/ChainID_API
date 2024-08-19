@@ -68,10 +68,11 @@ export class Service {
 
   async verifyDocument({addressSender,documentHash }: {documentHash: string; addressSender: string;}) {
     try {
-      const isVerified = await contract.methods
+      const isVerified: any = await contract.methods
         .verifyDocument(addressSender, documentHash)
         .call();
-      if (isVerified) {
+
+      if (isVerified['0']) {
 		return {
 			message: "document successfully verified",
 			valid: true
