@@ -3,22 +3,24 @@
 import express, { Request, Response } from "express";
 import Web3 from "web3";
 import contractABI from "../contract/abi";
+import dotenv from "dotenv";
+dotenv.config();
 
 const router = express.Router();
 
 const web3 = new Web3("http://127.0.0.1:7545");
 
-const contractAddress = "0xB460Dbc0B065eB56Ab99B7E4a75a33EE5ED40F27";
+const contractAddress = process.env.CONTRACT_ADDRESS
 
-const accountAddress = "0x2Cc95bB4A523967D70C96d8cC39C554c2210d3f1";
 
-const adminAddress = "0xE749a14e248c3530314376273B9C2dD34f8d8a9a";
+const adminAddress = process.env.ADMIN_ADDRESS;
 
-const privateKey =
-  "0x358fef047f8e72b640a415dc2642a70af1988062e8fc4ccf4e16ce1bd6571fa1";
+const institutionPrivateKey: any =
+  process.env.INSTITUTION_PRIVATE_KEY;
+
+const adminPrivateKey: any = process.env.ADMIN_PRIVATE_KEY
 
 const contract = new web3.eth.Contract(contractABI, contractAddress);
-
 
 router.post(
   "/issue-credential", async (req, res) => {
@@ -33,7 +35,9 @@ router.post(
             credentialDate
         );
 
-        const signatureObject = web3.eth.accounts.sign(credentialHash, privateKey);
+        console.log(institutionPrivateKey)
+
+        const signatureObject = web3.eth.accounts.sign(credentialHash, institutionPrivateKey);
         const signature = signatureObject.signature;
 
         console.log("Assinatura gerada: ", signature);
@@ -60,7 +64,7 @@ router.post(
             gasPrice
         };
 
-        const signedTx = await web3.eth.accounts.signTransaction(txData, privateKey);
+        const signedTx = await web3.eth.accounts.signTransaction(txData, institutionPrivateKey);
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
 
         res.json({ 
@@ -73,8 +77,34 @@ router.post(
     }
 });
 
+router.get('/credential', async (req, res) => {
+  try {
+
+      const { studentAddress } = req.query;
+
+      let credentials: any[] = await contract.methods.getStudentCredentials(studentAddress).call();
+
+      credentials = credentials.map((cred :any) => {
+        return {
+            credentialHash: cred[0],
+            credentialType: cred[1],
+            credentialDetails: cred[2],
+            educationalInstitutionAddress: cred[3],
+            studentAddress: cred[4],
+            credentialDate: cred[5].toString(),
+        };
+    });
+      res.json(credentials);
+  } catch (error: any) {
+      res.status(500).send('Erro ao recuperar credenciais: ' + error.message);
+  }
+});
+
 router.post('/validate-credential', async (req, res) => {
-  const { credentialHash, signature, educationAddress } = req.body;
+  const { credentialHash, educationAddress } = req.body;
+
+  const signatureObject = web3.eth.accounts.sign(credentialHash, institutionPrivateKey);
+  const signature = signatureObject.signature
 
   try {
       // Recupera o endereço que assinou o hash
@@ -94,19 +124,19 @@ router.post('/set-admin', async (req, res) => {
 
   try {
       const tx = contract.methods.setAdmin(newAdmin);
-      const gas = await tx.estimateGas({ from: accountAddress });
+      const gas = await tx.estimateGas({ from: adminAddress });
       const gasPrice = await web3.eth.getGasPrice();
       const data = tx.encodeABI();
 
       const txData = {
-          from: accountAddress,
+          from: adminAddress,
           to: contractAddress,
           data,
           gas,
           gasPrice
       };
 
-      const signedTx = await web3.eth.accounts.signTransaction(txData, privateKey);
+      const signedTx = await web3.eth.accounts.signTransaction(txData, adminPrivateKey);
       const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
 
       res.json({ transactionHash: receipt.transactionHash });
@@ -122,7 +152,6 @@ router.post('/set-institution', async (req, res) => {
       console.log(institutionAddress, institutionName);
 
       const tx = contract.methods.setInstitution(institutionAddress, institutionName);
-      console.log(tx);
       const gas = await tx.estimateGas({ from: adminAddress });
       const gasPrice = await web3.eth.getGasPrice();
       const data = tx.encodeABI();
@@ -174,6 +203,8 @@ router.post('/set-student', async (req, res) => {
 router.post('/set-employer', async (req, res) => {
   try {
       const { employerAddress } = req.body;
+
+      console.log(employerAddress)
 
       const tx = contract.methods.setEmployer(employerAddress);
       const gas = await tx.estimateGas({ from: adminAddress });
